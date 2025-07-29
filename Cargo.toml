@@ -1,0 +1,49 @@
+[package]
+name = "signal-chat"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Cryptographic primitives
+x25519-dalek = "1.2"
+ed25519-dalek = "1.0"
+curve25519-dalek = "3.2"
+sha2 = "0.10"
+hkdf = "0.12"
+aes-gcm = "0.9"
+rand = "0.8"
+rand_core = "0.6"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_arrays = "0.2.0"
+serde_json = "1.0"
+bincode = "2.0.1"
+
+# Networking
+tokio = { version = "1.0", features = ["full"] }
+tokio-util = { version = "0.7", features = ["codec"] }
+
+# CLI
+clap = { version = "4.0", features = ["derive"] }
+crossterm = "0.29.0"
+ratatui = "0.29.0"
+
+# Storage
+sled = "0.34"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0.17"
+
+# Utilities
+hex = "0.4"
+base64 = "0.22.1"
+uuid = { version = "1.0", features = ["v4"] }
+
+[dev-dependencies]
+criterion = "0.7.0"
+
+[[bin]]
+name = "signal-chat"
+path = "src/main.rs"
