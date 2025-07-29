@@ -1,0 +1,44 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Application specific
+.signal-chat/
+/tmp/
+*.md.backup
+
+# Temporary files
+/tmp/
+.tmp/
+temp/
