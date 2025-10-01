@@ -1,7 +1,7 @@
 use crate::crypto::{hkdf, EphemeralKeyPair};
 use crate::error::{Result, SignalError};
 use aes_gcm::aead::Aead;
-use aes_gcm::{Aes256Gcm, NewAead, Nonce};
+use aes_gcm::{Aes256Gcm, KeyInit, Nonce};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
