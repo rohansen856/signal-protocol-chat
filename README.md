@@ -151,15 +151,16 @@ cargo bench
 
 Terminal 1 (Rohan):
 ```bash
-cargo run -- init --name Rohan
-cargo run -- add-contact Adi 127.0.0.1:8081
-cargo run -- chat --peer Adi
+cargo run -- --data-dir ~/.signal-chat-rohan --port 8080 init --name Rohan
+cargo run -- --data-dir ~/.signal-chat-rohan --port 8080 add-contact Adi 127.0.0.1:8081
+cargo run -- --data-dir ~/.signal-chat-rohan --port 8080 chat --peer Adi
 ```
 
 Terminal 2 (Adi):
 ```bash
-cargo run -- init --name Adi
-cargo run -- --port 8081 chat
+  cargo run -- --data-dir ~/.signal-chat-adi --port 8081 init --name Adi
+  cargo run -- --data-dir ~/.signal-chat-adi --port 8081 add-contact Rohan 127.0.0.1:8080
+  cargo run -- --data-dir ~/.signal-chat-adi --port 8081 chat
 ```
 
 Now Rohan and Adi can securely exchange messages!

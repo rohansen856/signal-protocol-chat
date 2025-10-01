@@ -38,6 +38,10 @@ pids
 /tmp/
 *.md.backup
 
+# Environment files
+.env
+.env.local
+
 # Temporary files
 /tmp/
 .tmp/
