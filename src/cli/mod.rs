@@ -22,15 +22,15 @@ use std::io;
 use std::path::Path;
 use tokio::sync::mpsc;
 
-pub async fn init_identity(name: &str, data_dir: &Path) -> Result<()> {
-    let storage = Storage::new(data_dir)?;
+pub async fn init_identity(name: &str, _data_dir: &Path) -> Result<()> {
+    let storage = Storage::new().await?;
 
-    if storage.load_identity()?.is_some() {
+    if storage.load_identity(name).await?.is_some() {
         return Err(SignalError::Protocol("Identity already exists".to_string()));
     }
 
     let identity = Identity::new(name.to_string())?;
-    storage.store_identity(&identity)?;
+    storage.store_identity(&identity).await?;
 
     println!("Identity created for '{name}'");
     println!(
@@ -41,23 +41,24 @@ pub async fn init_identity(name: &str, data_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-pub async fn add_contact(name: &str, address: &str, data_dir: &Path) -> Result<()> {
-    let storage = Storage::new(data_dir)?;
+pub async fn add_contact(name: &str, address: &str, owner: &str) -> Result<()> {
+    let storage = Storage::new().await?;
 
     let contact = Contact {
+        owner: owner.to_string(),
         name: name.to_string(),
         address: parse_address(address)?,
         identity_key: [0u8; 32], // Will be filled when first connecting
         last_seen: 0,
     };
 
-    storage.store_contact(&contact)?;
+    storage.store_contact(owner, &contact).await?;
     Ok(())
 }
 
-pub async fn list_contacts(data_dir: &Path) -> Result<()> {
-    let storage = Storage::new(data_dir)?;
-    let contacts = storage.list_contacts()?;
+pub async fn list_contacts(owner: &str) -> Result<()> {
+    let storage = Storage::new().await?;
+    let contacts = storage.list_contacts(owner).await?;
 
     if contacts.is_empty() {
         println!("No contacts found");
@@ -72,11 +73,11 @@ pub async fn list_contacts(data_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-pub async fn start_chat(peer: Option<String>, port: u16, data_dir: &Path) -> Result<()> {
-    let storage = Storage::new(data_dir)?;
+pub async fn start_chat(peer: Option<String>, port: u16, _data_dir: &Path, user: &str) -> Result<()> {
+    let storage = Storage::new().await?;
 
     let identity = storage
-        .load_identity()?
+        .load_identity(user).await?
         .ok_or_else(|| SignalError::Protocol("No identity found. Run 'init' first.".to_string()))?;
 
     let (network, mut network_rx) = NetworkManager::new(port);
@@ -120,14 +121,14 @@ async fn run_chat_app(
     // Create ChatSession (placeholder network manager)
     let (network_manager, _) = NetworkManager::new(8080);
     let mut chat_session = ChatSession::new(
-        Storage::new(storage.path())?,
+        Storage::new().await?,
         identity.clone(),
         network_manager,
     );
 
     if let Some(peer_name) = peer {
         if let Ok(_) = chat_session.start_conversation(&peer_name).await {
-            messages = chat_session.load_message_history(&peer_name, 100)?;
+            messages = chat_session.load_message_history(&peer_name, 100).await?;
         }
     }
 

@@ -29,13 +29,13 @@ impl ChatSession {
     pub async fn start_conversation(&mut self, contact_name: &str) -> Result<()> {
         let contact = self
             .storage
-            .load_contact(contact_name)?
+            .load_contact(&self.identity.name, contact_name).await?
             .ok_or_else(|| SignalError::ContactNotFound(contact_name.to_string()))?;
 
         self.current_contact = Some(contact.clone());
 
         // Check if we have an existing session
-        if let Some(session) = self.storage.load_session(&contact.name)? {
+        if let Some(session) = self.storage.load_session(&self.identity.name, &contact.name).await? {
             self.session = Some(session);
         } else {
             // Initiate new session with X3DH
@@ -67,12 +67,13 @@ impl ChatSession {
         let ratchet_state = RatchetState::init_alice(&x3dh_session.shared_secret, &bob_dh_public)?;
 
         let session = Session {
+            owner: self.identity.name.clone(),
             contact_name: contact.name.clone(),
             ratchet_state,
             established: true,
         };
 
-        self.storage.store_session(&contact.name, &session)?;
+        self.storage.store_session(&self.identity.name, &session).await?;
         self.session = Some(session);
 
         // Send key exchange message
@@ -124,11 +125,11 @@ impl ChatSession {
             .await?;
 
         // Store the session state
-        self.storage.store_session(&contact.name, &session)?;
+        self.storage.store_session(&self.identity.name, &session).await?;
         self.session = Some(session);
 
         // Store the message locally
-        self.storage.store_message(&contact.name, &chat_message)?;
+        self.storage.store_message(&self.identity.name, &contact.name, &chat_message).await?;
 
         Ok(())
     }
@@ -176,16 +177,18 @@ impl ChatSession {
         let ratchet_state = RatchetState::init_bob(&x3dh_session.shared_secret, bob_dh_keypair);
 
         let session = Session {
+            owner: self.identity.name.clone(),
             contact_name: from.clone(),
             ratchet_state,
             established: true,
         };
 
-        self.storage.store_session(&from, &session)?;
+        self.storage.store_session(&self.identity.name, &session).await?;
 
         // If this contact doesn't exist, create it
-        if self.storage.load_contact(&from)?.is_none() {
+        if self.storage.load_contact(&self.identity.name, &from).await?.is_none() {
             let contact = Contact {
+                owner: self.identity.name.clone(),
                 name: from.clone(),
                 address: "unknown".to_string(), // Would be filled from network info
                 identity_key: exchange.identity_key,
@@ -194,7 +197,7 @@ impl ChatSession {
                     .unwrap()
                     .as_secs(),
             };
-            self.storage.store_contact(&contact)?;
+            self.storage.store_contact(&self.identity.name, &contact).await?;
         }
 
         Ok(Some(ChatMessage::new_system(format!(
@@ -209,7 +212,7 @@ impl ChatSession {
     ) -> Result<Option<ChatMessage>> {
         let mut session = self
             .storage
-            .load_session(&from)?
+            .load_session(&self.identity.name, &from).await?
             .ok_or(SignalError::NoSession)?;
 
         let decrypted_bytes = session
@@ -217,11 +220,11 @@ impl ChatSession {
             .decrypt(&encrypted_message, from.as_bytes())?;
 
         // Update session state
-        self.storage.store_session(&from, &session)?;
+        self.storage.store_session(&self.identity.name, &session).await?;
 
         if let Some(chat_message) = ChatMessage::from_bytes(&decrypted_bytes) {
             // Store the message
-            self.storage.store_message(&from, &chat_message)?;
+            self.storage.store_message(&self.identity.name, &from, &chat_message).await?;
             Ok(Some(chat_message))
         } else {
             Err(SignalError::InvalidMessage)
@@ -236,11 +239,11 @@ impl ChatSession {
         self.session.as_ref().is_some_and(|s| s.established)
     }
 
-    pub fn load_message_history(
+    pub async fn load_message_history(
         &self,
         contact_name: &str,
         limit: usize,
     ) -> Result<Vec<ChatMessage>> {
-        self.storage.load_messages(contact_name, limit)
+        self.storage.load_messages(&self.identity.name, contact_name, limit).await
     }
 }

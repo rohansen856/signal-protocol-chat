@@ -21,6 +21,9 @@ pub struct Cli {
 
     #[arg(long, default_value = "8080")]
     pub port: u16,
+
+    #[arg(long)]
+    pub user: Option<String>,
 }
 
 #[derive(Subcommand)]
@@ -45,19 +48,25 @@ pub enum Commands {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
+    // Load environment variables
+    dotenv::dotenv().ok();
+
     match cli.command {
         Commands::Init { name } => {
             cli::init_identity(&name, &cli.data_dir).await?;
             println!("Identity '{name}' initialized successfully");
         }
         Commands::Chat { peer } => {
-            cli::start_chat(peer, cli.port, &cli.data_dir).await?;
+            let user = cli.user.as_deref().unwrap_or("default");
+            cli::start_chat(peer, cli.port, &cli.data_dir, user).await?;
         }
         Commands::Contacts => {
-            cli::list_contacts(&cli.data_dir).await?;
+            let user = cli.user.as_deref().unwrap_or("default");
+            cli::list_contacts(user).await?;
         }
         Commands::AddContact { name, address } => {
-            cli::add_contact(&name, &address, &cli.data_dir).await?;
+            let user = cli.user.as_deref().unwrap_or("default");
+            cli::add_contact(&name, &address, user).await?;
             println!("Contact '{name}' added successfully");
         }
     }
